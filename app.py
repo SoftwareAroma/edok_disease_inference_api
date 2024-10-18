@@ -68,9 +68,9 @@ def predict_diseases(symptoms: str):
     # Get the top diseases predicted by the model
     top_diseases = predict_top_diseases(user_symptoms)
     
-    return {
+    return JSONResponse({
         'top_diseases': top_diseases
-    }
+    })
 
 @app.get('/symptoms')
 def get_symptoms():
