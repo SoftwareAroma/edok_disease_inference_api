@@ -1,5 +1,5 @@
 import pickle
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import json
 
@@ -39,11 +39,11 @@ def predict_top_diseases(symptoms):
     )
     
     # Get the top 3 diseases and their likelihood percentages
-    top_3_diseases = [
+    top_diseases = [
         (disease, round(prob * 100 * 100, 2)) for disease, prob in sorted_diseases[:10]
     ]
     
-    return top_3_diseases
+    return top_diseases
 
 
 @app.get('/')
@@ -52,16 +52,36 @@ def read_root():
         'message': 'Welcome to the Disease Prediction API'
     })
 
-@app.get('/predict_diseases')
-def predict_diseases(symptoms: str):
-    # Validate input: Ensure symptoms are provided
-    if not symptoms:
-        raise HTTPException(status_code=400, detail="Please provide symptoms as a comma-separated string.")
+# @app.get('/predict_diseases')
+# def predict_diseases(symptoms: str):
+#     # Validate input: Ensure symptoms are provided
+#     if not symptoms:
+#         raise HTTPException(status_code=400, detail="Please provide symptoms as a comma-separated string.")
 
-    # Split the symptoms string into a list
-    user_symptoms = [symptom.strip() for symptom in symptoms.split(',') if symptom.strip()]
+#     # Split the symptoms string into a list
+#     user_symptoms = [symptom.strip() for symptom in symptoms.split(',') if symptom.strip()]
     
-    # Validate that at least one symptom is provided
+#     # Validate that at least one symptom is provided
+#     if not user_symptoms:
+#         raise HTTPException(status_code=400, detail="Please provide at least one valid symptom.")
+
+#     # Get the top diseases predicted by the model
+#     top_diseases = predict_top_diseases(user_symptoms)
+    
+#     return JSONResponse({
+#         'top_diseases': top_diseases
+#     })
+
+@app.post('/predict_diseases')
+def predict_diseases(symptoms: list[str] = Body(..., embed=True)):
+    # Validate input: Ensure symptoms list is provided and not empty
+    if not symptoms:
+        raise HTTPException(status_code=400, detail="Please provide a list of symptoms.")
+
+    # Clean and validate each symptom in the list
+    user_symptoms = [symptom.strip() for symptom in symptoms if symptom.strip()]
+    
+    # Check that at least one valid symptom is provided
     if not user_symptoms:
         raise HTTPException(status_code=400, detail="Please provide at least one valid symptom.")
 
@@ -93,7 +113,7 @@ def get_symptoms():
         raise HTTPException(status_code=500, detail="Error reading the symptoms file.")
     
     
-@app.get('/treatment')
+@app.post('/treatment')
 def get_treatment(disease: str):
     # Load the treatment data from the JSON file
     try:
